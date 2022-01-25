@@ -27,7 +27,7 @@ public class AlgorithmUtils {
                 for (Banner banner : population) {
                     rulete += (banner.getF_i() / sumF_i);
                     if (rulete >= random) {
-                        nextPopulationSelection.add(new Banner(banner.getX(), banner.getY(), banner.getWidth(), banner.getHight()));
+                        nextPopulationSelection.add(new Banner(banner.getX(), banner.getY(), population.get(i).getWidth(), population.get(i).getHight()));
                         result = false;
                         break;
                     }
@@ -39,20 +39,20 @@ public class AlgorithmUtils {
 
     public List<Banner> rankingSelection(List<Banner> population) {
         population.sort(Comparator.comparing(Banner::getF_i).reversed());
-        final List<Banner> top50pop = population.subList(0, population.size()/2);
-        List<Banner> notTop50pop = population.subList(population.size()/2, population.size());
-        List<Banner> finalNotTop50pop = notTop50pop;
-        notTop50pop.forEach(banner -> {
-            banner.setX(top50pop.get(finalNotTop50pop.indexOf(banner)).getX());
-            banner.setY(top50pop.get(finalNotTop50pop.indexOf(banner)).getY());
-        });
+        final List<Banner> top20pop = population.subList(0, population.size()/5);
+        List<Banner> rest80pop = population.subList(population.size()/5, population.size());
+        List<Banner> finalRest80pop = rouletteWheelSelection(rest80pop);
+        for(int i = 0; i < rest80pop.size(); i++) {
+            rest80pop.get(i).setX(finalRest80pop.get(i).getX());
+            rest80pop.get(i).setY(finalRest80pop.get(i).getY());
+        }
 
-        notTop50pop = crucifixion(notTop50pop);
-        notTop50pop = mutation(notTop50pop);
+        rest80pop = crucifixion(rest80pop);
+        rest80pop = mutation(rest80pop);
 
         List<Banner> nextPopulation = new ArrayList<>();
-        nextPopulation.addAll(top50pop);
-        nextPopulation.addAll(notTop50pop);
+        nextPopulation.addAll(top20pop);
+        nextPopulation.addAll(rest80pop);
 
         nextPopulation.forEach(e -> {
             e.setF_i(0.0);

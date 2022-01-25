@@ -42,7 +42,7 @@ def update(i):
     x_banner.clear()
     y_banner.clear()
 
-    with open(r"C:\Users\uqern\Desktop\AG\a_" + str(i) + ".txt") as fobj:
+    with open(r"C:\Users\uqern\Desktop\AG\a_" + str(i*5) + ".txt") as fobj:
         for line in fobj:
             row = line.split()
             x_banner.append(row[0])
