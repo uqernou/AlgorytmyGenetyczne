@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.experimental.UtilityClass;
 import main.java.Banner;
 import main.java.Figure;
+import main.java.Individual;
 import main.java.enums.CornerType;
 import main.java.enums.SideType;
 import main.java.impl.Building;
@@ -15,6 +16,130 @@ import java.util.stream.Collectors;
 @Data
 @UtilityClass
 public class AlgorithmUtils {
+
+    public List<Individual> rankingIndividualSelection2(List<Individual> population){
+        List<Individual> nextPopulationSelection = rouletteWheelSelection2(population);
+        nextPopulationSelection = crucifixionAndMutationIndividuals(nextPopulationSelection);
+        return nextPopulationSelection;
+    }
+
+    public List<Individual> rankingIndividualSelection(List<Individual> population){
+        List<Individual> nextPopulationSelection = new ArrayList<>();
+        population.sort(Comparator.comparing(Individual::getAvrg).reversed());
+
+        final List<Individual> top50pop = population.subList(0, population.size()/2);
+        List<Individual> rest50pop = population.subList(population.size()/2, population.size());
+        for(int i = 0; i < top50pop.size(); i++){
+            for (int j = 0; j < top50pop.get(i).getBannerList().size(); j++) {
+                rest50pop.get(i).getBannerList().get(j).setX(
+                        top50pop.get(i).getBannerList().get(j).getX());
+                rest50pop.get(i).getBannerList().get(j).setY(
+                        top50pop.get(i).getBannerList().get(j).getY());
+            }
+        }
+        rest50pop = crucifixionAndMutationIndividuals(rest50pop);
+
+        nextPopulationSelection.addAll(top50pop);
+        nextPopulationSelection.addAll(rest50pop);
+        return nextPopulationSelection;
+    }
+
+
+    public List<Individual> crucifixionAndMutationIndividuals(List<Individual> selectedPopulation){
+        List<Individual> nextPopulationCrucifixion = new ArrayList<>();
+        Collections.shuffle(selectedPopulation);
+        for (int i = 0; i < selectedPopulation.size() / 2; i++) {
+            Individual parent1 = selectedPopulation.get(i);
+            Individual parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
+
+            parent1.getBannerList().sort(Comparator.comparing(Banner::getF_i));
+            parent2.getBannerList().sort(Comparator.comparing(Banner::getF_i));
+
+            for(int j = 0; j < parent1.getBannerList().size() / 4; j++){
+                List<Pair<Integer, Integer>> crucifix = BinaryUtils.randomMinMaxFromParents2(parent1.getBannerList().get(j),
+                                                                                             parent2.getBannerList().get(j));
+                Pair<Integer, Integer> x_coordinates = crucifix.get(0);
+                Pair<Integer, Integer> y_coordinates = crucifix.get(1);
+                parent1.getBannerList().get(j).setX(x_coordinates.getLeft());
+                parent2.getBannerList().get(j).setX(x_coordinates.getRight());
+                parent1.getBannerList().get(j).setY(y_coordinates.getLeft());
+                parent2.getBannerList().get(j).setY(y_coordinates.getRight());
+            }
+
+            nextPopulationCrucifixion.add(parent1);
+            nextPopulationCrucifixion.add(parent2);
+        }
+        nextPopulationCrucifixion.forEach(individual -> {
+            List<Banner> bannerList;
+            bannerList = individual.getBannerList();
+            bannerList = mutation(bannerList);
+            individual.setBannerList(bannerList);
+        });
+        return nextPopulationCrucifixion;
+    }
+
+    public List<Banner> crucifixion(List<Banner> selectedPopulation) {
+        List<Banner> nextPopulationCrucifixion = new ArrayList<>();
+        Collections.shuffle(selectedPopulation);
+        for (int i = 0; i < selectedPopulation.size() / 2; i++) {
+            Banner parent1 = selectedPopulation.get(i);
+            Banner parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
+
+            List<Pair<Integer, Integer>> crucifix = BinaryUtils.randomMinMaxFromParents2(parent1, parent2);
+            Pair<Integer, Integer> x_coordinates = crucifix.get(0);
+            Pair<Integer, Integer> y_coordinates = crucifix.get(1);
+            parent1.setX(x_coordinates.getLeft());
+            parent2.setX(x_coordinates.getRight());
+            parent1.setY(y_coordinates.getLeft());
+            parent2.setY(y_coordinates.getRight());
+
+            nextPopulationCrucifixion.add(parent1);
+            nextPopulationCrucifixion.add(parent2);
+        }
+
+        return nextPopulationCrucifixion;
+    }
+
+    public List<Banner> mutation(List<Banner> crucifixedPopulation) {
+        List<Banner> nextGenerationPopulation = new ArrayList<>();
+        crucifixedPopulation.forEach(banner -> {
+            final double randomX = Math.random();
+            final double randomY = Math.random();
+            if (randomX <= 0.9) {
+                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getX()).length());
+                banner.setX(BinaryUtils.positionMutation(banner.getX(), randomPosition));
+            }
+            if (randomY <= 0.9) {
+                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getY()).length());
+                banner.setY(BinaryUtils.positionMutation(banner.getY(), randomPosition));
+            }
+            nextGenerationPopulation.add(banner);
+        });
+
+        return nextGenerationPopulation;
+    }
+
+
+    public List<Individual> rouletteWheelSelection2(List<Individual> population) {
+        List<Individual> nextPopulationSelection = new ArrayList<>();
+        final double sumF_i = population.stream().mapToDouble(Individual::getAvrg).sum();
+        for (int i = 0; i < population.size(); i++) {
+            double random = Math.random();
+            double rulete = 0.0;
+            boolean result = true;
+            while (result) {
+                for (Individual banner : population) {
+                    rulete += (banner.getAvrg() / sumF_i);
+                    if (rulete >= random) {
+                        nextPopulationSelection.add(new Individual(population.get(i).getBannerList(), population.get(i).getAvrg()));
+                        result = false;
+                        break;
+                    }
+                }
+            }
+        }
+        return nextPopulationSelection;
+    }
 
     public List<Banner> rouletteWheelSelection(List<Banner> population) {
         List<Banner> nextPopulationSelection = new ArrayList<>();
@@ -82,47 +207,6 @@ public class AlgorithmUtils {
             }
         }
         return nextPopulationSelection;
-    }
-
-    public List<Banner> crucifixion(List<Banner> selectedPopulation) {
-        List<Banner> nextPopulationCrucifixion = new ArrayList<>();
-        Collections.shuffle(selectedPopulation);
-        for (int i = 0; i < selectedPopulation.size() / 2; i++) {
-            Banner parent1 = selectedPopulation.get(i);
-            Banner parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
-
-            List<Pair<Integer, Integer>> crucifix = BinaryUtils.randomMinMaxFromParents2(parent1, parent2);
-            Pair<Integer, Integer> x_coordinates = crucifix.get(0);
-            Pair<Integer, Integer> y_coordinates = crucifix.get(1);
-            parent1.setX(x_coordinates.getLeft());
-            parent2.setX(x_coordinates.getRight());
-            parent1.setY(y_coordinates.getLeft());
-            parent2.setY(y_coordinates.getRight());
-
-            nextPopulationCrucifixion.add(parent1);
-            nextPopulationCrucifixion.add(parent2);
-        }
-
-        return nextPopulationCrucifixion;
-    }
-
-    public List<Banner> mutation(List<Banner> crucifixedPopulation) {
-        List<Banner> nextGenerationPopulation = new ArrayList<>();
-        crucifixedPopulation.forEach(banner -> {
-            final double randomX = Math.random();
-            final double randomY = Math.random();
-            if (randomX <= 0.2) {
-                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getX()).length());
-                banner.setX(BinaryUtils.positionMutation(banner.getX(), randomPosition));
-            }
-            if (randomY <= 0.2) {
-                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getY()).length());
-                banner.setY(BinaryUtils.positionMutation(banner.getY(), randomPosition));
-            }
-            nextGenerationPopulation.add(banner);
-        });
-
-        return nextGenerationPopulation;
     }
 
     public void calculateAdaptation(List<Banner> population, List<Figure> elementsOfBuilding, Banner current) {
