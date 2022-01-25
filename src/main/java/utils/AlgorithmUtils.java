@@ -8,10 +8,7 @@ import main.java.enums.CornerType;
 import main.java.enums.SideType;
 import main.java.impl.Building;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -30,32 +27,53 @@ public class AlgorithmUtils {
                 for (Banner banner : population) {
                     rulete += (banner.getF_i() / sumF_i);
                     if (rulete >= random) {
-                        nextPopulationSelection.add(banner);
+                        nextPopulationSelection.add(new Banner(banner.getX(), banner.getY(), banner.getWidth(), banner.getHight()));
                         result = false;
                         break;
                     }
                 }
             }
         }
-        nextPopulationSelection.forEach(banner -> {
-            banner.setCoveredSurface(0);
-            banner.setF_i(0.0);
-        });
         return nextPopulationSelection;
+    }
+
+    public List<Banner> rankingSelection(List<Banner> population) {
+        population.sort(Comparator.comparing(Banner::getF_i).reversed());
+        final List<Banner> top50pop = population.subList(0, population.size()/2);
+        List<Banner> notTop50pop = population.subList(population.size()/2, population.size());
+        List<Banner> finalNotTop50pop = notTop50pop;
+        notTop50pop.forEach(banner -> {
+            banner.setX(top50pop.get(finalNotTop50pop.indexOf(banner)).getX());
+            banner.setY(top50pop.get(finalNotTop50pop.indexOf(banner)).getY());
+        });
+
+        notTop50pop = crucifixion(notTop50pop);
+        notTop50pop = mutation(notTop50pop);
+
+        List<Banner> nextPopulation = new ArrayList<>();
+        nextPopulation.addAll(top50pop);
+        nextPopulation.addAll(notTop50pop);
+
+        nextPopulation.forEach(e -> {
+            e.setF_i(0.0);
+            e.setCoveredSurface(0);
+        });
+
+        return nextPopulation;
     }
 
     public List<Banner> rouletteWheelSelectionScaled(List<Banner> population) {
         List<Banner> nextPopulationSelection = new ArrayList<>();
         final double sumF_i = population.stream().mapToDouble(Banner::getF_i).sum();
-        while (nextPopulationSelection.size() < 30) {
+        while (nextPopulationSelection.size() < 50) {
             double rulete = 0.0;
             boolean result = true;
             while (result) {
                 double random = Math.random();
                 for (Banner banner : population) {
-                    rulete += (0.01 * banner.getF_i() / sumF_i);
+                    rulete += (banner.getF_i() / sumF_i);
                     if (rulete >= random) {
-                        nextPopulationSelection.add(banner);
+                        nextPopulationSelection.add(new Banner(banner.getX(), banner.getY(), banner.getWidth(), banner.getHight()));
                         result = false;
                         break;
                     }
@@ -63,10 +81,6 @@ public class AlgorithmUtils {
                 rulete = 0;
             }
         }
-        nextPopulationSelection.forEach(banner -> {
-            banner.setCoveredSurface(0);
-            banner.setF_i(0.0);
-        });
         return nextPopulationSelection;
     }
 
@@ -77,8 +91,8 @@ public class AlgorithmUtils {
             Banner parent1 = selectedPopulation.get(i);
             Banner parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
 
-            Pair<Integer, Integer> x_coordinates = BinaryUtils.crossParents(parent1.getX(), parent2.getX(), 2, 7);
-            Pair<Integer, Integer> y_coordinates = BinaryUtils.crossParents(parent1.getY(), parent2.getY(), 2, 7);
+            Pair<Integer, Integer> x_coordinates = BinaryUtils.crossParents(parent1.getX(), parent2.getX(), 6, 11);
+            Pair<Integer, Integer> y_coordinates = BinaryUtils.crossParents(parent1.getY(), parent2.getY(), 6, 11);
             parent1.setX(x_coordinates.getLeft());
             parent2.setX(x_coordinates.getRight());
             parent1.setY(y_coordinates.getLeft());
@@ -96,12 +110,12 @@ public class AlgorithmUtils {
         crucifixedPopulation.forEach(banner -> {
             final double randomX = Math.random();
             final double randomY = Math.random();
-            if (randomX <= 0.3) {
-                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getX()).length() - 1);
+            if (randomX <= 0.2) {
+                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getX()).length());
                 banner.setX(BinaryUtils.positionMutation(banner.getX(), randomPosition));
             }
-            if (randomY <= 0.3) {
-                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getY()).length() - 1);
+            if (randomY <= 0.2) {
+                final int randomPosition = ThreadLocalRandom.current().nextInt(0, Integer.toBinaryString(banner.getY()).length());
                 banner.setY(BinaryUtils.positionMutation(banner.getY(), randomPosition));
             }
             nextGenerationPopulation.add(banner);
@@ -138,7 +152,8 @@ public class AlgorithmUtils {
     }
 
     private void calculateFi(Banner banner) {
-        banner.setF_i(1.0 - (double) banner.getCoveredSurface() / (double) (banner.getCoveredSurface() + banner.getHight() * banner.getWidth()));
+        banner.setF_i(1.0 -
+                ((double) banner.getCoveredSurface() / (double) (banner.getCoveredSurface() + banner.getSurface())));
     }
 
     public double argFi(List<Banner> population) {

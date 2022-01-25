@@ -26,11 +26,16 @@ public class AlgorymGenetyczny {
     private void symulacja() throws IOException {
         generateFacadeElement();
         generateFirstPopulation();
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < 1000; i++) {
             calculateAdaptation(i);
-            nextBannerList = AlgorithmUtils.rouletteWheelSelectionScaled(bannerList);
-            nextBannerList = AlgorithmUtils.crucifixion(nextBannerList);
-            nextBannerList = AlgorithmUtils.mutation(nextBannerList);
+            double avrFi = bannerList.stream().mapToDouble(Banner::getF_i).sum()/(double) bannerList.size();
+            System.out.println(avrFi);
+            if(avrFi > 0.9)
+                return;
+            nextBannerList = AlgorithmUtils.rankingSelection(bannerList);
+//            nextBannerList = AlgorithmUtils.rouletteWheelSelectionScaled(bannerList);
+//            nextBannerList = AlgorithmUtils.crucifixion(nextBannerList);
+//            nextBannerList = AlgorithmUtils.mutation(nextBannerList);
             bannerList = new ArrayList<>();
             bannerList = nextBannerList;
         }
@@ -56,7 +61,7 @@ public class AlgorymGenetyczny {
 
     private void generateFirstPopulation() throws IOException {
 //        fieldFreeSurfaceInfo();
-        for(int i = 0; i < 40; i ++){
+        for(int i = 0; i < 20; i ++){
             Banner banner = new Banner();
             banner.setWidth(banner.getA()[ThreadLocalRandom.current().nextInt(0, 5)]);
             banner.setHight(banner.getB()[ThreadLocalRandom.current().nextInt(0, 3)]);

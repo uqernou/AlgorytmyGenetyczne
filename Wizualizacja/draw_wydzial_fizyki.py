@@ -50,7 +50,7 @@ def update(i):
     ln.set_data(list(map(float, x_banner)), list(map(float, y_banner)))
     return ln
 
-ani = animation.FuncAnimation(fig, update, repeat=True, frames=10, interval=100, blit=False)
+ani = animation.FuncAnimation(fig, update, repeat=True, frames=50, interval=100, blit=False)
 f = r"C:\Users\uqern\Desktop\AG\aaa.gif"
 writergif = animation.PillowWriter()
 ani.save(f, writer=writergif)

@@ -16,8 +16,8 @@ import java.util.List;
 @NoArgsConstructor
 public class Banner {
 
-    private int A[] = {120, 160, 200, 240, 280};
-    private int B[] = {120, 160, 200};
+    private int A[] = {220, 260, 300, 340, 380};
+    private int B[] = {220, 260, 300};
 
     private int x;
     private int y;
@@ -26,6 +26,17 @@ public class Banner {
     private int coveredSurface = 0;
 
     private double f_i;
+
+    public Banner(int x, int y, int width, int hight){
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.hight = hight;
+    }
+
+    public int getSurface(){
+        return width * hight;
+    }
 
     public List<Pair<Integer, Integer>> sidePointList(SideType sideType){
         List<Pair<Integer, Integer>> iteratedPoints = new ArrayList<>();
