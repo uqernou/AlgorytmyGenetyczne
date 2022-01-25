@@ -1,12 +1,67 @@
 package main.java.utils;
 
 import lombok.experimental.UtilityClass;
+import main.java.Banner;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @UtilityClass
 public class BinaryUtils {
 
     private String zeroBit = "0";
     private String oneBit = "1";
+
+    public List<Pair<Integer, Integer>> randomMinMaxFromParents(Banner parent1, Banner parent2){
+        String xParent1 = Integer.toBinaryString(parent1.getX());
+        String xParent2 = Integer.toBinaryString(parent2.getX());
+
+        String yParent1 = Integer.toBinaryString(parent1.getY());
+        String yParent2 = Integer.toBinaryString(parent2.getY());
+
+        int x1 = ThreadLocalRandom.current().nextInt(0, Math.min(xParent1.length(), xParent2.length()) + 1);
+        int x2 = ThreadLocalRandom.current().nextInt(0, Math.min(xParent1.length(), xParent2.length()) + 1);
+
+        int y1 = ThreadLocalRandom.current().nextInt(0, Math.min(yParent1.length(), yParent2.length()) + 1);
+        int y2 = ThreadLocalRandom.current().nextInt(0, Math.min(yParent1.length(), yParent2.length()) + 1);
+
+        int xMin = Math.min(x1, x2);
+        int xMax = Math.max(x1, x2);
+
+        int yMin = Math.min(y1, y2);
+        int yMax = Math.max(y1, y2);
+
+        Pair<Integer, Integer> x_coordinates = crossParents(parent1.getX(), parent2.getX(), xMin, xMax);
+        Pair<Integer, Integer> y_coordinates = crossParents(parent1.getY(), parent2.getY(), yMin, yMax);
+
+        return Arrays.asList(x_coordinates, y_coordinates);
+    }
+
+    public List<Pair<Integer, Integer>> randomMinMaxFromParents2(Banner parent1, Banner parent2){
+        String xParent1 = Integer.toBinaryString(parent1.getX());
+        String xParent2 = Integer.toBinaryString(parent2.getX());
+
+        String yParent1 = Integer.toBinaryString(parent1.getY());
+        String yParent2 = Integer.toBinaryString(parent2.getY());
+
+        int x1 = ThreadLocalRandom.current().nextInt(0, Math.min(xParent1.length(), xParent2.length()) + 1);
+        int x2 = ThreadLocalRandom.current().nextInt(0, Math.min(xParent1.length(), xParent2.length()) + 1);
+
+        int y1 = ThreadLocalRandom.current().nextInt(0, Math.min(yParent1.length(), yParent2.length()) + 1);
+        int y2 = ThreadLocalRandom.current().nextInt(0, Math.min(yParent1.length(), yParent2.length()) + 1);
+
+        int xMin = Math.min(0, x2);
+        int xMax = Math.max(x1, x2);
+
+        int yMin = Math.min(0, y2);
+        int yMax = Math.max(y1, y2);
+
+        Pair<Integer, Integer> x_coordinates = crossParents(parent1.getX(), parent2.getY(), xMin, xMax);
+        Pair<Integer, Integer> y_coordinates = crossParents(parent1.getY(), parent2.getX(), yMin, yMax);
+
+        return Arrays.asList(x_coordinates, y_coordinates);
+    }
 
     public Pair<Integer, Integer> crossParents(int number1, int number2, int minBit, int maxBit){
         String parent1 = Integer.toBinaryString(number1);

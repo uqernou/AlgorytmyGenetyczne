@@ -91,8 +91,9 @@ public class AlgorithmUtils {
             Banner parent1 = selectedPopulation.get(i);
             Banner parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
 
-            Pair<Integer, Integer> x_coordinates = BinaryUtils.crossParents(parent1.getX(), parent2.getX(), 6, 11);
-            Pair<Integer, Integer> y_coordinates = BinaryUtils.crossParents(parent1.getY(), parent2.getY(), 6, 11);
+            List<Pair<Integer, Integer>> crucifix = BinaryUtils.randomMinMaxFromParents2(parent1, parent2);
+            Pair<Integer, Integer> x_coordinates = crucifix.get(0);
+            Pair<Integer, Integer> y_coordinates = crucifix.get(1);
             parent1.setX(x_coordinates.getLeft());
             parent2.setX(x_coordinates.getRight());
             parent1.setY(y_coordinates.getLeft());
