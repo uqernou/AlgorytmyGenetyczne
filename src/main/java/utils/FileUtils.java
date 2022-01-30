@@ -15,7 +15,7 @@ import java.util.List;
 @UtilityClass
 public class FileUtils {
 
-    private static String FILENAME = "C:"+ File.separator +"Users"+ File.separator +"uqern"+ File.separator +"Desktop" + File.separator + "AG" + File.separator ;
+    private static String FILENAME = "C:"+ File.separator +"Users"+ File.separator +"uqern"+ File.separator +"Desktop" + File.separator + "AG_individual" + File.separator ;
     private static BufferedWriter writer;
 
 

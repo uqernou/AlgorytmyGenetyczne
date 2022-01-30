@@ -19,8 +19,6 @@ import java.util.stream.Collectors;
 public class AlgorymGenetyczny {
 
     private List<Individual> bannerIndividualList = new ArrayList<>();
-    private List<Double> adaptationList = new ArrayList<>();
-    private List<Banner> bannerList = new ArrayList<>();
     private List<Individual> nextBannerIndividualList = new ArrayList<>();
 
     private List<Figure> facadeElementList = new ArrayList<>();
@@ -28,24 +26,26 @@ public class AlgorymGenetyczny {
     private BigWindow bigWindow = new BigWindow();
     private Building building = new Building();
 
-    private void symulacja(int Nbanners, int Nindividual) throws IOException {
+    private void symulacja(int Nbanners, int Nindividual, int Ntime) throws IOException {
         generateFacadeElement();
         generateFirstPopulation(Nbanners, Nindividual);
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < Ntime; i++) {
             calculateAdaptation(i);
             List<Individual> sorted = bannerIndividualList.stream().sorted(Comparator.comparing(Individual::getAvrg).reversed()).collect(Collectors.toList());
             System.out.println(" " + sorted.get(0).getAvrg());
             Optional<Individual> winner = bannerIndividualList.stream().filter(e -> e.getAvrg() > 0.93).findFirst();
             if(winner.isPresent()) {
                 FileUtils.saveBanners(winner.get().getBannerList(), i);
-                facadeElementList.add(building);
-                FileUtils.saveElements(facadeElementList, i);
                 return;
+            } else {
+                FileUtils.saveBanners(sorted.get(0).getBannerList(), i);
             }
-            nextBannerIndividualList = AlgorithmUtils.rankingIndividualSelection2(bannerIndividualList);
+            nextBannerIndividualList = AlgorithmUtils.rankingIndividualSelection(bannerIndividualList);
             bannerIndividualList = new ArrayList<>();
             bannerIndividualList = nextBannerIndividualList;
         }
+        facadeElementList.add(building);
+        FileUtils.saveElements(facadeElementList, 0);
     }
 
     private void generateFacadeElement(){
@@ -64,7 +64,7 @@ public class AlgorymGenetyczny {
         }
     }
 
-    private void generateFirstPopulation(int Nbanners, int Npopulation) throws IOException {
+    private void generateFirstPopulation(int Nbanners, int Npopulation){
         List<Banner> bannerList = new ArrayList<>();
         for (int i = 0; i < Nbanners; i ++) {
             Banner banner = new Banner();
@@ -94,7 +94,7 @@ public class AlgorymGenetyczny {
     }
 
 
-    private void calculateAdaptation(int step) throws IOException {
+    private void calculateAdaptation(int step) {
         bannerIndividualList.forEach(bannerList -> {
                     bannerList.setAvrg(0);
         });
@@ -110,7 +110,7 @@ public class AlgorymGenetyczny {
 
     public static void main(String[] args) throws IOException {
         AlgorymGenetyczny algorymGenetyczny = new AlgorymGenetyczny();
-        algorymGenetyczny.symulacja(10, 10000);
+        algorymGenetyczny.symulacja(20, 100, 100);
 
     }
 }

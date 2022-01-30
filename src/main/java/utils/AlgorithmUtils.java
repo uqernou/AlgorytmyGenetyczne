@@ -18,11 +18,18 @@ import java.util.stream.Collectors;
 public class AlgorithmUtils {
 
     public List<Individual> rankingIndividualSelection2(List<Individual> population){
-        List<Individual> nextPopulationSelection = rouletteWheelSelection2(population);
+        List<Individual> nextPopulationSelection = rouletteWheelSelectionIndividual(population);
         nextPopulationSelection = crucifixionAndMutationIndividuals(nextPopulationSelection);
         return nextPopulationSelection;
     }
 
+    /**
+     * Metoda rankingowa selekcji Osobników. 50% populacji osobników o najlepszym przystosowaniu przechodzi do
+     * następnego etapu. Na podstawie 50% najlepszych osobników, dokonuje się krzyżowania oraz mutacji jako uzupełnienie
+     * pozostałej części kolejenej generacji
+     * @param population
+     * @return
+     */
     public List<Individual> rankingIndividualSelection(List<Individual> population){
         List<Individual> nextPopulationSelection = new ArrayList<>();
         population.sort(Comparator.comparing(Individual::getAvrg).reversed());
@@ -45,12 +52,20 @@ public class AlgorithmUtils {
     }
 
 
+    /**
+     * Metoda krzyżowania osobników populacji. Polega na losowym połączeniu w pary osobników, a następnie na wymianie
+     * części genotypu subpopulacji. Wymiana części genotypu subpopulacji dotyczy połowy najgorzej przystosowanych bannerów.
+     * Samo krzyżowanie polega na losowym wybraniu długości oraz pozycji początkowej allelu (bitu) do wymiany.
+     * @param selectedPopulation
+     * @return
+     */
     public List<Individual> crucifixionAndMutationIndividuals(List<Individual> selectedPopulation){
         List<Individual> nextPopulationCrucifixion = new ArrayList<>();
         Collections.shuffle(selectedPopulation);
         for (int i = 0; i < selectedPopulation.size() / 2; i++) {
             Individual parent1 = selectedPopulation.get(i);
             Individual parent2 = selectedPopulation.get(selectedPopulation.size() - i - 1);
+
 
             parent1.getBannerList().sort(Comparator.comparing(Banner::getF_i));
             parent2.getBannerList().sort(Comparator.comparing(Banner::getF_i));
@@ -120,7 +135,7 @@ public class AlgorithmUtils {
     }
 
 
-    public List<Individual> rouletteWheelSelection2(List<Individual> population) {
+    public List<Individual> rouletteWheelSelectionIndividual(List<Individual> population) {
         List<Individual> nextPopulationSelection = new ArrayList<>();
         final double sumF_i = population.stream().mapToDouble(Individual::getAvrg).sum();
         for (int i = 0; i < population.size(); i++) {
@@ -141,7 +156,7 @@ public class AlgorithmUtils {
         return nextPopulationSelection;
     }
 
-    public List<Banner> rouletteWheelSelection(List<Banner> population) {
+    public List<Banner> rouletteWheelSelectionBanner(List<Banner> population) {
         List<Banner> nextPopulationSelection = new ArrayList<>();
         final double sumF_i = population.stream().mapToDouble(Banner::getF_i).sum();
         for (int i = 0; i < population.size(); i++) {
@@ -166,7 +181,7 @@ public class AlgorithmUtils {
         population.sort(Comparator.comparing(Banner::getF_i).reversed());
         final List<Banner> top20pop = population.subList(0, population.size()/5);
         List<Banner> rest80pop = population.subList(population.size()/5, population.size());
-        List<Banner> finalRest80pop = rouletteWheelSelection(rest80pop);
+        List<Banner> finalRest80pop = rouletteWheelSelectionBanner(rest80pop);
         for(int i = 0; i < rest80pop.size(); i++) {
             rest80pop.get(i).setX(finalRest80pop.get(i).getX());
             rest80pop.get(i).setY(finalRest80pop.get(i).getY());
