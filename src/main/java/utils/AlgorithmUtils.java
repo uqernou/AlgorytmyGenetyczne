@@ -16,6 +16,11 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class AlgorithmUtils {
 
+    /**
+     * Metoda ruletki
+     * @param population
+     * @return
+     */
     public List<Banner> rouletteWheelSelection(List<Banner> population) {
         List<Banner> nextPopulationSelection = new ArrayList<>();
         final double sumF_i = population.stream().mapToDouble(Banner::getF_i).sum();
@@ -37,6 +42,13 @@ public class AlgorithmUtils {
         return nextPopulationSelection;
     }
 
+    /**
+     * Metoda rankingowa selekcji Osobników. 50% populacji osobników o najlepszym przystosowaniu przechodzi do
+     * następnego etapu. Na podstawie 50% najlepszych osobników, dokonuje się krzyżowania oraz mutacji jako uzupełnienie
+     * pozostałej części kolejenej generacji
+     * @param population
+     * @return
+     */
     public List<Banner> rankingSelection(List<Banner> population) {
         population.sort(Comparator.comparing(Banner::getF_i).reversed());
         final List<Banner> top50pop = population.subList(0, population.size()/2);
@@ -60,28 +72,6 @@ public class AlgorithmUtils {
         });
 
         return nextPopulation;
-    }
-
-    public List<Banner> rouletteWheelSelectionScaled(List<Banner> population) {
-        List<Banner> nextPopulationSelection = new ArrayList<>();
-        final double sumF_i = population.stream().mapToDouble(Banner::getF_i).sum();
-        while (nextPopulationSelection.size() < 50) {
-            double rulete = 0.0;
-            boolean result = true;
-            while (result) {
-                double random = Math.random();
-                for (Banner banner : population) {
-                    rulete += (banner.getF_i() / sumF_i);
-                    if (rulete >= random) {
-                        nextPopulationSelection.add(new Banner(banner.getX(), banner.getY(), banner.getWidth(), banner.getHight()));
-                        result = false;
-                        break;
-                    }
-                }
-                rulete = 0;
-            }
-        }
-        return nextPopulationSelection;
     }
 
     public List<Banner> crucifixion(List<Banner> selectedPopulation) {

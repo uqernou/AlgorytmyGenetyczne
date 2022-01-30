@@ -23,19 +23,16 @@ public class AlgorymGenetyczny {
     private BigWindow bigWindow = new BigWindow();
     private Building building = new Building();
 
-    private void symulacja() throws IOException {
+    private void symulacja(int Nbanners, int Ntime) throws IOException {
         generateFacadeElement();
-        generateFirstPopulation();
-        for(int i = 0; i < 1000; i++) {
+        generateFirstPopulation(Nbanners);
+        for(int i = 0; i < Ntime; i++) {
             calculateAdaptation(i);
             double avrFi = bannerList.stream().mapToDouble(Banner::getF_i).sum()/(double) bannerList.size();
             System.out.println(avrFi);
             if(avrFi > 0.9)
                 return;
             nextBannerList = AlgorithmUtils.rankingSelection(bannerList);
-//            nextBannerList = AlgorithmUtils.rouletteWheelSelectionScaled(bannerList);
-//            nextBannerList = AlgorithmUtils.crucifixion(nextBannerList);
-//            nextBannerList = AlgorithmUtils.mutation(nextBannerList);
             bannerList = new ArrayList<>();
             bannerList = nextBannerList;
         }
@@ -55,13 +52,10 @@ public class AlgorymGenetyczny {
             bigWindowTmp.setY(bigWindow.getY_pos()[i]);
             facadeElementList.add(bigWindowTmp);
         }
-//        facadeElementList.forEach(Figure::printCoorinates);
-//        building.printCoorinates();
     }
 
-    private void generateFirstPopulation() throws IOException {
-//        fieldFreeSurfaceInfo();
-        for(int i = 0; i < 20; i ++){
+    private void generateFirstPopulation(int Nbanners) throws IOException {
+        for(int i = 0; i < Nbanners; i ++){
             Banner banner = new Banner();
             banner.setWidth(banner.getA()[ThreadLocalRandom.current().nextInt(0, 5)]);
             banner.setHight(banner.getB()[ThreadLocalRandom.current().nextInt(0, 3)]);
@@ -69,7 +63,6 @@ public class AlgorymGenetyczny {
             banner.setY(ThreadLocalRandom.current().nextInt(0, building.getHight()));
             bannerList.add(banner);
         }
-//        bannerList.forEach(Banner::printCoorinates);
         List<Figure> fig = facadeElementList;
         fig.add(building);
         FileUtils.saveElements(fig, 0);
@@ -78,23 +71,14 @@ public class AlgorymGenetyczny {
     private void calculateAdaptation(int step) throws IOException {
         bannerList.forEach(banner -> {
             AlgorithmUtils.calculateAdaptation(bannerList, facadeElementList, banner);
-//            System.out.println("Banner f_i: " + banner.getF_i() + " " + banner.getX() + " " + banner.getY());
         });
         FileUtils.saveAdaptation(bannerList);
         FileUtils.saveBanners(bannerList, step);
     }
 
-    private void fieldFreeSurfaceInfo(){
-        int surfaceOfElements = facadeElementList.stream().mapToInt(Figure::getSurfaceArea).sum();
-        int buildingSurface = building.getWidth() * building.getHight();
-        System.out.println("Pole budynku: " + (double) (buildingSurface) / 10000.0 + " [m2]");
-        System.out.println("Pole wolnego miejsca: " + (double) (buildingSurface - surfaceOfElements) / 10000.0 + " [m2]");
-        System.out.println("Wolne miejsce: " + ((double) (buildingSurface - surfaceOfElements) / 10000.0) / ((double) (buildingSurface) / 10000.0) + " [m2]");
-    }
-
     public static void main(String[] args) throws IOException {
         AlgorymGenetyczny algorymGenetyczny = new AlgorymGenetyczny();
-        algorymGenetyczny.symulacja();
+        algorymGenetyczny.symulacja(20, 100);
 
     }
 }
