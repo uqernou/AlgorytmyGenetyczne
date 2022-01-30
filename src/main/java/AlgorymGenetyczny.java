@@ -20,7 +20,8 @@ public class AlgorymGenetyczny {
 
     private List<Individual> bannerIndividualList = new ArrayList<>();
     private List<Individual> nextBannerIndividualList = new ArrayList<>();
-
+    private List<Pixel> fieldList = new ArrayList<>();
+    private boolean[][] pixelList = new boolean[5280][3512];
     private List<Figure> facadeElementList = new ArrayList<>();
     private SmallWindow smallWindow = new SmallWindow();
     private BigWindow bigWindow = new BigWindow();
@@ -28,12 +29,13 @@ public class AlgorymGenetyczny {
 
     private void symulacja(int Nbanners, int Nindividual, int Ntime) throws IOException {
         generateFacadeElement();
+        zakryjElementamiOrazFasada();
         generateFirstPopulation(Nbanners, Nindividual);
         for(int i = 0; i < Ntime; i++) {
-            calculateAdaptation(i);
+            calculateAdaptation(i, pixelList);
             List<Individual> sorted = bannerIndividualList.stream().sorted(Comparator.comparing(Individual::getAvrg).reversed()).collect(Collectors.toList());
             System.out.println(" " + sorted.get(0).getAvrg());
-            Optional<Individual> winner = bannerIndividualList.stream().filter(e -> e.getAvrg() > 0.93).findFirst();
+            Optional<Individual> winner = bannerIndividualList.stream().filter(e -> e.getAvrg() > 0.999).findFirst();
             if(winner.isPresent()) {
                 FileUtils.saveBanners(winner.get().getBannerList(), i);
                 return;
@@ -94,13 +96,13 @@ public class AlgorymGenetyczny {
     }
 
 
-    private void calculateAdaptation(int step) {
+    private void calculateAdaptation(int step, boolean[][] pixelList) {
         bannerIndividualList.forEach(bannerList -> {
                     bannerList.setAvrg(0);
         });
         bannerIndividualList.forEach(bannerList -> {
             bannerList.getBannerList().forEach(banner -> {
-                AlgorithmUtils.calculateAdaptation(bannerList.getBannerList(), facadeElementList, banner);
+                AlgorithmUtils.calculateAdaptation(bannerList.getBannerList(), banner, pixelList);
             });
             double avrFi = bannerList.getBannerList().stream().mapToDouble(Banner::getF_i).sum()/(double) bannerList.getBannerList().size();
             bannerList.setAvrg(avrFi);
@@ -108,9 +110,30 @@ public class AlgorymGenetyczny {
 
     }
 
+    public void zakryjElementamiOrazFasada(){
+        for(int i = 0; i < 5280; i++)
+            for(int j = 0; j < 3425; j++ ){
+                boolean czyZajete = false;
+                if (i < 200 || i > 2880 || j < 400 || j > 2125) {
+                    czyZajete = true;
+                    pixelList[i][j] = czyZajete;
+                }
+                if(!czyZajete) {
+                    for (Figure figure : facadeElementList) {
+                        boolean czyZajete2 = false;
+                        czyZajete2 = AlgorithmUtils.czyPunktWElemencie(figure, i - 200, j - 400);
+                        if (czyZajete2)
+                            pixelList[i][j] = czyZajete2;
+                    }
+                }
+            }
+
+    }
+
+
     public static void main(String[] args) throws IOException {
         AlgorymGenetyczny algorymGenetyczny = new AlgorymGenetyczny();
-        algorymGenetyczny.symulacja(20, 100, 100);
+        algorymGenetyczny.symulacja(15, 1000, 1000);
 
     }
 }

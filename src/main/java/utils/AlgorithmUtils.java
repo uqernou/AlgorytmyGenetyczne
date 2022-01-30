@@ -5,9 +5,7 @@ import lombok.experimental.UtilityClass;
 import main.java.Banner;
 import main.java.Figure;
 import main.java.Individual;
-import main.java.enums.CornerType;
-import main.java.enums.SideType;
-import main.java.impl.Building;
+import main.java.Pixel;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,6 +14,7 @@ import java.util.stream.Collectors;
 @Data
 @UtilityClass
 public class AlgorithmUtils {
+
 
     public List<Individual> rankingIndividualSelection2(List<Individual> population){
         List<Individual> nextPopulationSelection = rouletteWheelSelectionIndividual(population);
@@ -224,356 +223,45 @@ public class AlgorithmUtils {
         return nextPopulationSelection;
     }
 
-    public void calculateAdaptation(List<Banner> population, List<Figure> elementsOfBuilding, Banner current) {
+    public void calculateAdaptation(List<Banner> population, Banner current, boolean[][] pixelList) {
         List<Banner> coveredBanners = population.stream()
                 .filter(e -> !e.equals(current))
                 .collect(Collectors.toList());
+        boolean[][] zakryte = Arrays.stream(pixelList)
+                .map(boolean[]::clone)
+                .toArray(boolean[][]::new);
 
+        // zakrywanie powierzchni bannerami
         coveredBanners.forEach(otherBanner -> {
-            boolean corners = checkCorners(current, otherBanner);
-            if (!corners) {
-                boolean sides = checkSides(current, otherBanner);
-                if (!sides) {
-                    boolean complete = checkIfFullCovered(current, otherBanner);
+            for (int i = otherBanner.getX(); i < otherBanner.getX() + otherBanner.getWidth(); i++ ){
+                for (int j = otherBanner.getY() - otherBanner.getHight(); j < otherBanner.getY(); j++){
+
+                    zakryte[i+200][j+400] = true;
                 }
             }
         });
-        elementsOfBuilding.forEach(element -> {
-            boolean corners = checkCorners(current, element);
-            if (!corners) {
-                boolean sides = checkSides(current, element);
-                if (!sides) {
-                    boolean complete = checkIfFullCovered(current, element);
-                }
-            }
-        });
-        addSurfaceFromCrossingBuilding(current);
-        calculateFi(current);
+        // obliczenie Fi
+
+        calculateFi(current, zakryte);
+//        System.out.println(current.getF_i());
     }
 
-    private void calculateFi(Banner banner) {
-        banner.setF_i(1.0 -
-                ((double) banner.getCoveredSurface() / (double) (banner.getCoveredSurface() + banner.getSurface())));
+    private void calculateFi(Banner banner, boolean[][] zakryte) {
+        int fieldSum = banner.getHight() * banner.getWidth();
+        int fieldOtherElements = 0;
+        for(int i = banner.getX(); i < banner.getX() + banner.getWidth(); i++)
+            for(int j = banner.getY() - banner.getHight(); j < banner.getY(); j++){
+                if(zakryte[i+200][j+400])
+                    fieldOtherElements++;
+            }
+        double fi = (double) fieldOtherElements / (double) fieldSum;
+        banner.setF_i(1.0 - fi);
     }
 
     public double argFi(List<Banner> population) {
         return population.stream().mapToDouble(Banner::getF_i).sum() / (double) population.size();
     }
 
-    private void addSurfaceFromCrossingBuilding(Banner current) {
-        Building building = new Building();
-        int width = 0;
-        int height = 0;
-
-        if (current.getX() + current.getWidth() > building.getWidth() && current.getY() - current.getHight() >= 0) { //side right
-            width = (current.getX() + current.getWidth()) - building.getWidth();
-            height = current.getHight();
-            current.setCoveredSurface(current.getCoveredSurface() + width * height);
-        }
-        if (current.getX() + current.getWidth() > building.getWidth() && current.getY() - current.getHight() < 0) { //lower right corner
-            width = building.getWidth() - current.getX();
-            height = current.getY();
-            int surface = (current.getWidth() * current.getHight()) - (width * height);
-            current.setCoveredSurface(current.getCoveredSurface() + surface);
-        }
-        if (current.getX() + current.getWidth() < building.getWidth() && current.getY() - current.getHight() < 0) { //side lower
-            width = building.getWidth();
-            height = Math.abs(current.getY() - current.getHight());
-            current.setCoveredSurface(current.getCoveredSurface() + width * height);
-        }
-        if ((current.getX() >= building.getWidth()) || (current.getY() <= 0) || (current.getX() <= 0))
-            current.setCoveredSurface(current.getCoveredSurface() + current.getWidth() * current.getHight());
-
-        if (current.getY() >= building.getHight()) {
-            width = current.getWidth();
-            height = Math.abs(current.getY() - building.getHight());
-            current.setCoveredSurface(current.getCoveredSurface() + width * height);
-        }
-    }
-
-
-    private boolean checkCorners(Banner current, Banner potencialCover) {
-        boolean upperLeftCorner = checkIfCovering(potencialCover.getX() + potencialCover.getWidth(), potencialCover.getY() - potencialCover.getHight(), current);
-        if (upperLeftCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.UPPER_LEFT, current, potencialCover));
-            return true;
-        }
-        boolean lowerLeftCorner = checkIfCovering(potencialCover.getX() + potencialCover.getWidth(), potencialCover.getY(), current);
-        if (lowerLeftCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.LOWER_LEFT, current, potencialCover));
-            return true;
-        }
-        boolean upperRightCorner = checkIfCovering(potencialCover.getX(), potencialCover.getY() - potencialCover.getHight(), current);
-        if (upperRightCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.UPPER_RIGHT, current, potencialCover));
-            return true;
-        }
-        boolean lowerRightCorner = checkIfCovering(potencialCover.getX(), potencialCover.getY(), current);
-        if (lowerRightCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.LOWER_RIGHT, current, potencialCover));
-            return true;
-        }
-        if (current.getX() == potencialCover.getX() && current.getY() == potencialCover.getY()){
-            int surface = 0;
-            if (current.getWidth() >= potencialCover.getWidth() && current.getHight() >= potencialCover.getHight()){
-                surface=potencialCover.getWidth()*potencialCover.getHight();
-            }
-            else if (current.getWidth() < potencialCover.getWidth() && current.getHight() < potencialCover.getHight()){
-                surface=current.getWidth()*current.getHight();
-            } else {
-                surface=current.getWidth()*current.getHight();
-            }
-            current.setCoveredSurface(current.getCoveredSurface() + surface);
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean checkCorners(Banner current, Figure potencialCover) {
-        boolean upperLeftCorner = checkIfCovering(potencialCover.getX() + potencialCover.getWidth(), potencialCover.getY() - potencialCover.getHight(), current);
-        if (upperLeftCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.UPPER_LEFT, current, potencialCover));
-            return true;
-        }
-        boolean lowerLeftCorner = checkIfCovering(potencialCover.getX() + potencialCover.getWidth(), potencialCover.getY(), current);
-        if (lowerLeftCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.LOWER_LEFT, current, potencialCover));
-            return true;
-        }
-        boolean upperRightCorner = checkIfCovering(potencialCover.getX(), potencialCover.getY() - potencialCover.getHight(), current);
-        if (upperRightCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.UPPER_RIGHT, current, potencialCover));
-            return true;
-        }
-        boolean lowerRightCorner = checkIfCovering(potencialCover.getX(), potencialCover.getY(), current);
-        if (lowerRightCorner) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceByCornerCovered(CornerType.LOWER_RIGHT, current, potencialCover));
-            return true;
-        }
-        if (current.getX() == potencialCover.getX() && current.getY() == potencialCover.getY()){
-            int surface = 0;
-            if (current.getWidth() >= potencialCover.getWidth() && current.getHight() >= potencialCover.getHight()){
-                surface=potencialCover.getWidth()*potencialCover.getHight();
-            }
-            if (current.getWidth() < potencialCover.getWidth() && current.getHight() < potencialCover.getHight()){
-                surface=current.getWidth()*current.getHight();
-            }
-            current.setCoveredSurface(current.getCoveredSurface() + surface);
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean checkSides(Banner current, Banner potencialCover) {
-        Optional<Pair<Integer, Integer>> resultUpper = potencialCover.sidePointList(SideType.UPPER).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultUpper.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.UPPER, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultLower = potencialCover.sidePointList(SideType.LOWER).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultLower.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.LOWER, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultLeft = potencialCover.sidePointList(SideType.LEFT).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultLeft.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.LEFT, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultRight = potencialCover.sidePointList(SideType.RIGHT).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultRight.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.RIGHT, current, potencialCover));
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean checkSides(Banner current, Figure potencialCover) {
-        Optional<Pair<Integer, Integer>> resultUpper = potencialCover.sidePointList(SideType.UPPER).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultUpper.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.UPPER, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultLower = potencialCover.sidePointList(SideType.LOWER).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultLower.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.LOWER, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultLeft = potencialCover.sidePointList(SideType.LEFT).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultLeft.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.LEFT, current, potencialCover));
-            return true;
-        }
-
-        Optional<Pair<Integer, Integer>> resultRight = potencialCover.sidePointList(SideType.RIGHT).stream()
-                .filter(pair -> checkIfCovering(pair.getLeft(), pair.getRight(), current))
-                .findFirst();
-        if (resultRight.isPresent()) {
-            current.setCoveredSurface(current.getCoveredSurface() + calculateSurfaceBySideCovered(SideType.RIGHT, current, potencialCover));
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Oblicza pole powierzchni zasłoniętej przez Banner potencialCover
-     *
-     * @param cornerType     - Typ wierzchołka
-     * @param current        - banner obecnie sprawdzany
-     * @param potencialCover - potencjalnie przekrywajacy banner
-     * @return pole powierzchni [cm2]
-     */
-    private int calculateSurfaceByCornerCovered(CornerType cornerType, Banner current, Banner potencialCover) {
-        int width = 0;
-        int height = 0;
-        switch (cornerType) {
-            case UPPER_LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case UPPER_RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case LOWER_LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-            case LOWER_RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-        }
-        return width * height;
-    }
-
-    private int calculateSurfaceByCornerCovered(CornerType cornerType, Banner current, Figure potencialCover) {
-        int width = 0;
-        int height = 0;
-        switch (cornerType) {
-            case UPPER_LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case UPPER_RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case LOWER_LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-            case LOWER_RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-        }
-        return width * height;
-    }
-
-    /**
-     * Oblicza pole powierzchni zasłoniętej przez Banner potencialCover
-     *
-     * @param sideType       - Typ bocznego zasłonięcia
-     * @param current        - banner obecnie sprawdzany
-     * @param potencialCover - potencjalnie przekrywajacy banner
-     * @return pole powierzchni [cm2]
-     */
-    private int calculateSurfaceBySideCovered(SideType sideType, Banner current, Banner potencialCover) {
-        int width = 0;
-        int height = 0;
-        switch (sideType) {
-            case UPPER -> {
-                width = current.getWidth();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case LOWER -> {
-                width = current.getWidth();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-            case LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = current.getHight();
-            }
-            case RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = current.getHight();
-            }
-        }
-        return width * height;
-    }
-
-    private int calculateSurfaceBySideCovered(SideType sideType, Banner current, Figure potencialCover) {
-        int width = 0;
-        int height = 0;
-        switch (sideType) {
-            case UPPER -> {
-                width = current.getWidth();
-                height = current.getY() - (potencialCover.getY() - potencialCover.getHight());
-            }
-            case LOWER -> {
-                width = current.getWidth();
-                height = potencialCover.getY() - (current.getY() - current.getHight());
-            }
-            case LEFT -> {
-                width = (potencialCover.getX() + potencialCover.getWidth()) - current.getX();
-                height = current.getHight();
-            }
-            case RIGHT -> {
-                width = (current.getX() + current.getWidth()) - potencialCover.getX();
-                height = current.getHight();
-            }
-        }
-        return width * height;
-    }
-
-    /**
-     * Sprawdza czy banner potencialCover przekrywa cały banner badany
-     *
-     * @param current        - banner obecnie sprawdzany
-     * @param potencialCover - potencjalnie przekrywajacy banner
-     * @return true/false
-     */
-    private boolean checkIfFullCovered(Banner current, Banner potencialCover) {
-        if (checkIfCovering(potencialCover.getX(), potencialCover.getY(), current)) {
-            int surface = current.getCoveredSurface() + (current.getHight() * current.getWidth());
-            current.setCoveredSurface(current.getCoveredSurface() + surface);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean checkIfFullCovered(Banner current, Figure potencialCover) {
-        if (checkIfCovering(potencialCover.getX(), potencialCover.getY(), current)) {
-            int surface = current.getCoveredSurface() + (current.getHight() * current.getWidth());
-            current.setCoveredSurface(current.getCoveredSurface() + surface);
-            return true;
-        }
-        return false;
-    }
 
     /**
      * Sprawdza czy Punkt (x, y) znajduje sie w banerze Banner
@@ -587,4 +275,15 @@ public class AlgorithmUtils {
         return ((x >= banner.getX()) && (x <= banner.getX() + banner.getWidth())) &&
                 ((y <= banner.getY()) && (y >= banner.getY() - banner.getHight()));
     }
+
+    public boolean czyPunktWElemencie(Figure figure, int x, int y){
+        return (x >= figure.getX() && x <= figure.getX() + figure.getWidth()) &&
+                (y >= figure.getY() - figure.getHight() && y <= figure.getY());
+    }
+
+    public boolean czyPunktWBanerze(Banner banner, int x, int y){
+        return (x >= banner.getX() || x <= banner.getX() + banner.getWidth()) &&
+                (y >= banner.getY() - banner.getHight() || y <= banner.getY());
+    }
+
 }

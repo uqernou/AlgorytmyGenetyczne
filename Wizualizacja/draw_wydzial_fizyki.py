@@ -46,7 +46,7 @@ def update(i):
     ln.set_data(list(map(float, x_banner)), list(map(float, y_banner)))
     return ln
 
-ani = animation.FuncAnimation(fig, update, repeat=True, frames=9, interval=99, blit=False)
+ani = animation.FuncAnimation(fig, update, repeat=True, frames=57, interval=99, blit=False)
 f = r"C:\Users\uqern\Desktop\AG_individual\animation.gif"
 writergif = animation.PillowWriter()
 ani.save(f, writer=writergif)
